@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "909625542836",
+    "project_id": "tripshare-ccb3b",
+    "storage_bucket": "tripshare-ccb3b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909625542836:android:9390cb412611bd7dc06fe1",
+        "android_client_info": {
+          "package_name": "com.example.tripshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRuncaNHW_rL2l-3U1m3j9Zd2MwGCjwHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
