@@ -1,0 +1,143 @@
+package com.example.tripshare.data
+
+import android.content.Context
+import android.widget.Toast
+import androidx.lifecycle.*
+import com.example.tripshare.models.RideModel
+import com.google.firebase.database.*
+
+class RideAuthViewModel : ViewModel() {
+
+    private val database: DatabaseReference = FirebaseDatabase.getInstance().getReference("rides")
+
+    private val _rides = MutableLiveData<List<RideModel>>()
+    val rides: LiveData<List<RideModel>> = _rides
+
+    private var ridesListener: ValueEventListener? = null
+
+    fun fetchRides() {
+        ridesListener?.let { database.removeEventListener(it) }
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val rideList = snapshot.children.mapNotNull { snap ->
+                    snap.getValue(RideModel::class.java)
+                }
+                _rides.postValue(rideList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        database.addValueEventListener(listener)
+        ridesListener = listener
+    }
+
+    fun getRideById(rideId: String): LiveData<RideModel?> {
+        val rideLiveData = MutableLiveData<RideModel?>()
+        database.child(rideId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val ride = snapshot.getValue(RideModel::class.java)
+                rideLiveData.postValue(ride)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                rideLiveData.postValue(null)
+            }
+        })
+        return rideLiveData
+    }
+
+    fun addRide(
+        origin: String,
+        destination: String,
+        date: String = "N/A",
+        time: String = "N/A",
+        seats: Int,
+        status: String = "Available",
+        driverName: String = "Driver Name",
+        driverPhone: String = "0000000000",
+        context: Context,
+        onSuccess: () -> Unit
+    ) {
+        if (origin.isBlank() || destination.isBlank() || seats <= 0) {
+            Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rideId = database.push().key ?: run {
+            Toast.makeText(context, "Failed to generate ride ID", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val newRide = RideModel(
+            id = rideId,
+            origin = origin.trim(),
+            destination = destination.trim(),
+            date = if (date.isBlank()) "N/A" else date.trim(),
+            time = if (time.isBlank()) "N/A" else time.trim(),
+            seats = seats,
+            status = status,
+            driverName = driverName,
+            driverPhone = driverPhone
+        )
+
+        database.child(rideId).setValue(newRide)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Ride added successfully", Toast.LENGTH_SHORT).show()
+                onSuccess()
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Failed to add ride: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun updateRide(
+        rideId: String,
+        origin: String,
+        destination: String,
+        date: String = "N/A",
+        time: String = "N/A",
+        seats: Int,
+        status: String = "Available",
+        driverName: String = "Driver Name",
+        driverPhone: String = "0000000000",
+        context: Context,
+        onSuccess: () -> Unit
+    ) {
+        if (origin.isBlank() || destination.isBlank() || seats <= 0) {
+            Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val updatedRide = RideModel(
+            id = rideId,
+            origin = origin.trim(),
+            destination = destination.trim(),
+            date = if (date.isBlank()) "N/A" else date.trim(),
+            time = if (time.isBlank()) "N/A" else time.trim(),
+            seats = seats,
+            status = status,
+            driverName = driverName,
+            driverPhone = driverPhone
+        )
+
+        database.child(rideId).setValue(updatedRide)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Ride updated successfully", Toast.LENGTH_SHORT).show()
+                onSuccess()
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Update failed: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun deleteRide(rideId: String, context: Context) {
+        database.child(rideId).removeValue()
+            .addOnSuccessListener { Toast.makeText(context, "Ride deleted", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(context, "Delete failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ridesListener?.let { database.removeEventListener(it) }
+    }
+}

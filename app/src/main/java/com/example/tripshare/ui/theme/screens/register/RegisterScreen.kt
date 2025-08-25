@@ -1,30 +1,47 @@
 package com.example.tripshare.screens.register
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.tripshare.data.AuthViewModel
+import com.example.tripshare.navigation.ROUTE_LOGIN
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmodel{}
-) {
+fun RegisterScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
     var confirmpassword by remember { mutableStateOf("") }
-    val authViewModel: AuthViewModel=viewmodel()
+    var phone by remember { mutableStateOf("") }
+
     val roles = listOf("driver", "passenger", "organizer")
     var role by remember { mutableStateOf(roles[1]) }
     var roleMenuExpanded by remember { mutableStateOf(false) }
+
+    var passwordVisible by remember { mutableStateOf(false) } // shared toggle
+
+    val authViewModel: AuthViewModel = viewModel()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -40,7 +57,9 @@ fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmode
             value = name,
             onValueChange = { name = it },
             label = { Text("Full Name") },
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.Blue)
         )
         Spacer(Modifier.height(12.dp))
 
@@ -48,7 +67,9 @@ fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmode
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.Blue)
         )
         Spacer(Modifier.height(12.dp))
 
@@ -56,30 +77,51 @@ fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmode
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.Blue)
         )
         Spacer(Modifier.height(12.dp))
+
         OutlinedTextField(
             value = confirmpassword,
             onValueChange = { confirmpassword = it },
             label = { Text("Confirm Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.Blue)
         )
         Spacer(Modifier.height(12.dp))
 
-        Box(modifier = Modifier.fillMaxWidth()) {
+        ExposedDropdownMenuBox(
+            expanded = roleMenuExpanded,
+            onExpandedChange = { roleMenuExpanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             OutlinedTextField(
-                value = role,
+                value = role.replaceFirstChar { it.uppercase() },
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Role") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { roleMenuExpanded = true }
+                textStyle = TextStyle(color = Color.Blue),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = roleMenuExpanded) },
+                modifier = Modifier.menuAnchor()
             )
-            DropdownMenu(
+            ExposedDropdownMenu(
                 expanded = roleMenuExpanded,
                 onDismissRequest = { roleMenuExpanded = false }
             ) {
@@ -100,12 +142,25 @@ fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmode
             value = phone,
             onValueChange = { phone = it },
             label = { Text("Phone Number") },
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.Blue)
         )
         Spacer(Modifier.height(20.dp))
 
         Button(
-            onClick = {  },
+            onClick = {
+                authViewModel.signup(
+                    name = name,
+                    email = email,
+                    password = password,
+                    confirmpassword = confirmpassword,
+                    role = role,
+                    phone = phone,
+                    navController = navController,
+                    context = context
+                )
+            },
             enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 6 && phone.isNotBlank(),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -113,17 +168,14 @@ fun RegisterScreen(navController: NavController,viewmodel:AuthViewModel=viewmode
         }
 
         Spacer(Modifier.height(12.dp))
-        TextButton(onClick = { }) {
+        TextButton(onClick = { navController.navigate(ROUTE_LOGIN) }) {
             Text("Already have an account? Login")
         }
     }
 }
 
-
-annotation class zcomposable
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun RegisterScreenPreview(){
+fun RegisterScreenPreview() {
     RegisterScreen(rememberNavController())
 }

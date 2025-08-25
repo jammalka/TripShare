@@ -1,9 +1,16 @@
+
 package com.example.tripshare.models
 
+
 data class RideModel(
-    val rideId: String = "",
-    val driverId: String = "",
-    val eventId: String = "",      // links ride to event
-    val seatsAvailable: Int = 0,
-    val pickupPoint: String = ""
+    val id: String = "",
+    val origin: String = "",
+    val destination: String = "",
+    val date: String = "",
+    val time: String = "",
+    val seats: Int = 0,
+    val status: String? = "Available",
+    val driverName: String? = "",
+    val driverPhone: String? = ""
+
 )

@@ -2,25 +2,36 @@ package com.example.tripshare.ui.theme.screens.login
 
 
 import android.provider.SyncStateContract
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.tripshare.data.AuthViewModel
 import com.example.tripshare.navigation.ROUTE_ROLE
 import com.example.tripshare.navigation.ROUTE_REGISTER
+
 
 @Composable
 fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val authViewModel: AuthViewModel = viewModel()
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -67,10 +78,11 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            val context= LocalContext.current
 
             Button(
-                onClick = {
-                    navController.navigate(ROUTE_ROLE)
+                onClick = {authViewModel.login(email=email,password=password,navController=navController,context=context)
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,14 +95,13 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(12.dp))
 
             TextButton(onClick = {
-                navController.navigate(ROUTE_REGISTER)
             }) {
-                Text("Don’t have an account? Register")
+                Text("Don’t have an account? Register",color =Color.Blue,
+                    modifier = Modifier.clickable{navController.navigate(ROUTE_REGISTER)})
             }
         }
     }
 }
-annotation class composable
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

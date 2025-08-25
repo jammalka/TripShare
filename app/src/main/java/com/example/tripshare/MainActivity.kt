@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TripShareTheme {
+                AppNavHost()
             }
         }
     }
