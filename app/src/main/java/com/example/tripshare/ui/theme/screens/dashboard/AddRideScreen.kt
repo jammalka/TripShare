@@ -33,7 +33,7 @@ fun AddRideScreen(
     var destination by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
-    var seats by remember { mutableStateOf(1) }
+    var seats by remember { mutableStateOf("") }   // ✅ changed to String
     var driverName by remember { mutableStateOf("") }
     var driverPhone by remember { mutableStateOf("") }
 
@@ -112,9 +112,10 @@ fun AddRideScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // ✅ Seats as String input
                 OutlinedTextField(
-                    value = seats.toString(),
-                    onValueChange = { seats = it.toIntOrNull() ?: 1 },
+                    value = seats,
+                    onValueChange = { seats = it },
                     label = { Text("Seats") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -175,14 +176,14 @@ fun AddRideScreen(
                     onClick = {
                         if (origin.isNotBlank() && destination.isNotBlank() &&
                             date.isNotBlank() && time.isNotBlank() &&
-                            seats > 0 && driverName.isNotBlank() && driverPhone.isNotBlank()
+                            seats.isNotBlank() && driverName.isNotBlank() && driverPhone.isNotBlank()
                         ) {
                             viewModel.addRide(
                                 origin = origin,
                                 destination = destination,
                                 date = date,
                                 time = time,
-                                seats = seats,
+                                seats = seats.toIntOrNull() ?: 0,  // ✅ convert here
                                 status = status,
                                 driverName = driverName,
                                 driverPhone = driverPhone,

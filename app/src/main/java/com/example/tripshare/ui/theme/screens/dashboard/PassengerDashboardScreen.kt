@@ -4,28 +4,32 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState   // 👈 IMPORTANT
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.example.tripshare.data.RideAuthViewModel
 import com.example.tripshare.models.RideModel
+import com.example.tripshare.navigation.ROUTE_BOOKINGS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PassengerDashboardScreen(
-    navController: NavHostController,
+    navController: NavController,
     userId: String,
     rideAuthViewModel: RideAuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val rides by rideAuthViewModel.rides.observeAsState(emptyList())
+    val rides: List<RideModel> by rideAuthViewModel.rides.observeAsState(emptyList())
 
+    // fetch rides once when screen loads
     LaunchedEffect(Unit) {
         rideAuthViewModel.fetchRides()
     }
@@ -33,6 +37,11 @@ fun PassengerDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Available Rides") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { navController.navigate(ROUTE_BOOKINGS) }) {
+                Icon(Icons.Default.Book, contentDescription = "My Bookings")
+            }
         }
     ) { padding ->
         if (rides.isEmpty()) {
@@ -40,20 +49,22 @@ fun PassengerDashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 Text("No rides available")
             }
         } else {
             LazyColumn(
                 modifier = Modifier
+                    .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(rides) { ride: RideModel ->   // ✅ explicit type
+                items(rides) { ride: RideModel ->
                     RideCard(ride = ride, onBook = {
                         rideAuthViewModel.bookRide(
-                            rideId = ride.id,   // ✅ use ride.id
+                            rideId = ride.id,  // ✅ this works if fetchRides sets ride.id
                             userId = userId,
                             context = context
                         )

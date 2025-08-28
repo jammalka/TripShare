@@ -1,6 +1,5 @@
 package com.example.tripshare.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,11 +13,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.tripshare.navigation.ROUTE_DRIVER
 import com.example.tripshare.navigation.ROUTE_LOGIN
+import com.example.tripshare.navigation.ROUTE_ORGANISER
+import com.example.tripshare.navigation.ROUTE_PASSENGER
 
-// Define your routes
-const val ROUTE_DRIVER = "driverDashboard"
-const val ROUTE_PASSENGER = "passengerDashboard"
-const val ROUTE_ORGANISER = "organiserDashboard"
+
 
 @Composable
 fun RoleSelectionScreen(navController: NavController) {
@@ -51,9 +49,7 @@ fun RoleSelectionScreen(navController: NavController) {
                     .height(56.dp),
                 shape = MaterialTheme.shapes.large
             ) {
-                Text("Driver", fontSize = 18.sp, modifier = Modifier.clickable{navController.navigate(
-                    ROUTE_DRIVER
-                )})
+                Text("Driver", fontSize = 18.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

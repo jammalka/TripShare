@@ -1,6 +1,11 @@
 package com.example.tripshare.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -37,14 +42,25 @@ fun AppNavHost(
         composable(ROUTE_ROLE) { RoleSelectionScreen(navController) }
         composable(ROUTE_DRIVER) { DriverDashboardScreen(navController) }
         composable(ROUTE_ADD_RIDE) { AddRideScreen(navController) }
-        composable ( ROUTE_PASSENGER ){ PassengerDashboardScreen(navController=navController, userId = "passenger") }
-        composable (ROUTE_BOOKINGS ){ MyBookingsScreen(navController=navController, userId = "My_Bookings") }
+        composable(ROUTE_PASSENGER) {
+            PassengerDashboardScreen(navController = navController, userId = "passenger")
+        }
+        composable(ROUTE_BOOKINGS) {
+            MyBookingsScreen(navController = navController, userId = "My_Bookings")
+        }
         composable(
             route = "$ROUTE_UPDATE_RIDE/{rideId}",
             arguments = listOf(navArgument("rideId") { type = NavType.StringType })
         ) { backStackEntry ->
             val rideId = backStackEntry.arguments?.getString("rideId") ?: return@composable
             UpdateRideScreen(navController = navController, rideId = rideId)
+        }
+
+        // ✅ Placeholder for Organiser (so app doesn’t crash)
+        composable(ROUTE_ORGANISER) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Organiser Dashboard Coming Soon")
+            }
         }
     }
 }

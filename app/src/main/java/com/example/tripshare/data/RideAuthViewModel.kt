@@ -8,19 +8,26 @@ import com.google.firebase.database.*
 
 class RideAuthViewModel : ViewModel() {
 
-    private val database: DatabaseReference = FirebaseDatabase.getInstance().getReference("rides")
+    private val database: DatabaseReference =
+        FirebaseDatabase.getInstance().getReference("rides")
 
     private val _rides = MutableLiveData<List<RideModel>>()
     val rides: LiveData<List<RideModel>> = _rides
 
     private var ridesListener: ValueEventListener? = null
 
+    // ✅ My Bookings LiveData
+    private val _myBookings = MutableLiveData<List<RideModel>>()
+    val myBookings: LiveData<List<RideModel>> = _myBookings
+
+    // ✅ Fetch all rides
     fun fetchRides() {
         ridesListener?.let { database.removeEventListener(it) }
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val rideList = snapshot.children.mapNotNull { snap ->
-                    snap.getValue(RideModel::class.java)
+                    val ride = snap.getValue(RideModel::class.java)
+                    ride?.copy(id = snap.key ?: "")
                 }
                 _rides.postValue(rideList)
             }
@@ -31,12 +38,13 @@ class RideAuthViewModel : ViewModel() {
         ridesListener = listener
     }
 
+    // ✅ Get a single ride by id
     fun getRideById(rideId: String): LiveData<RideModel?> {
         val rideLiveData = MutableLiveData<RideModel?>()
         database.child(rideId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val ride = snapshot.getValue(RideModel::class.java)
-                rideLiveData.postValue(ride)
+                rideLiveData.postValue(ride?.copy(id = snapshot.key ?: ""))
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -46,6 +54,7 @@ class RideAuthViewModel : ViewModel() {
         return rideLiveData
     }
 
+    // ✅ Add ride
     fun addRide(
         origin: String,
         destination: String,
@@ -63,10 +72,7 @@ class RideAuthViewModel : ViewModel() {
             return
         }
 
-        val rideId = database.push().key ?: run {
-            Toast.makeText(context, "Failed to generate ride ID", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val rideId = database.push().key ?: return
 
         val newRide = RideModel(
             id = rideId,
@@ -87,10 +93,11 @@ class RideAuthViewModel : ViewModel() {
                 onSuccess()
             }
             .addOnFailureListener {
-                Toast.makeText(context, "Failed to add ride: ${it.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
+    // ✅ Update ride
     fun updateRide(
         rideId: String,
         origin: String,
@@ -104,11 +111,6 @@ class RideAuthViewModel : ViewModel() {
         context: Context,
         onSuccess: () -> Unit
     ) {
-        if (origin.isBlank() || destination.isBlank() || seats <= 0) {
-            Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val updatedRide = RideModel(
             id = rideId,
             origin = origin.trim(),
@@ -119,7 +121,7 @@ class RideAuthViewModel : ViewModel() {
             status = status,
             driverName = driverName,
             driverPhone = driverPhone,
-            bookedBy = null // reset booking if ride is updated
+            bookedBy = null
         )
 
         database.child(rideId).setValue(updatedRide)
@@ -132,22 +134,29 @@ class RideAuthViewModel : ViewModel() {
             }
     }
 
+    // ✅ Delete ride
     fun deleteRide(rideId: String, context: Context) {
         database.child(rideId).removeValue()
-            .addOnSuccessListener { Toast.makeText(context, "Ride deleted", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { Toast.makeText(context, "Delete failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener {
+                Toast.makeText(context, "Ride deleted", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Delete failed: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
-    // ✅ New: Book a ride
+    // ✅ Book a ride
     fun bookRide(rideId: String, userId: String, context: Context) {
-        database.child(rideId).get().addOnSuccessListener { snapshot ->
+        val rideRef = database.child(rideId)
+        rideRef.get().addOnSuccessListener { snapshot ->
             val ride = snapshot.getValue(RideModel::class.java)
-            if (ride != null && ride.status == "Available") {
+            if (ride != null && ride.seats > 0 && ride.bookedBy == null) {
                 val updatedRide = ride.copy(
-                    status = "Booked",
+                    seats = ride.seats - 1,
+                    status = if (ride.seats - 1 == 0) "Booked" else "Available",
                     bookedBy = userId
                 )
-                database.child(rideId).setValue(updatedRide)
+                rideRef.setValue(updatedRide)
                     .addOnSuccessListener {
                         Toast.makeText(context, "Ride booked successfully", Toast.LENGTH_SHORT).show()
                     }
@@ -155,42 +164,23 @@ class RideAuthViewModel : ViewModel() {
                         Toast.makeText(context, "Booking failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
             } else {
-                Toast.makeText(context, "Ride is no longer available", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Ride unavailable", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    fun fetchMyBookings(userId: String): LiveData<List<RideModel>> {
-        val myBookings = MutableLiveData<List<RideModel>>()
-        database.orderByChild("bookedBy").equalTo(userId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val bookings = snapshot.children.mapNotNull { snap ->
-                        snap.getValue(RideModel::class.java)
-                    }
-                    myBookings.postValue(bookings)
-                }
-
-                override fun onCancelled(error: DatabaseError) {}
-            })
-        return myBookings
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        ridesListener?.let { database.removeEventListener(it) }
-    }
+    // ✅ Cancel booking
     fun cancelBooking(
         rideId: String,
         context: Context,
         onSuccess: () -> Unit
     ) {
         val rideRef = database.child(rideId)
-
         rideRef.get().addOnSuccessListener { snapshot ->
             val ride = snapshot.getValue(RideModel::class.java)
-            if (ride != null) {
+            if (ride != null && ride.bookedBy != null) {
                 val updatedRide = ride.copy(
+                    seats = ride.seats + 1,
                     status = "Available",
                     bookedBy = null
                 )
@@ -200,10 +190,30 @@ class RideAuthViewModel : ViewModel() {
                         onSuccess()
                     }
                     .addOnFailureListener {
-                        Toast.makeText(context, "Failed to cancel: ${it.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
             }
         }
     }
 
+    // ✅ Fetch user’s bookings
+    fun fetchMyBookings(userId: String) {
+        database.orderByChild("bookedBy").equalTo(userId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val bookings = snapshot.children.mapNotNull { snap ->
+                        val ride = snap.getValue(RideModel::class.java)
+                        ride?.copy(id = snap.key ?: "")
+                    }
+                    _myBookings.postValue(bookings)
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ridesListener?.let { database.removeEventListener(it) }
+    }
 }
