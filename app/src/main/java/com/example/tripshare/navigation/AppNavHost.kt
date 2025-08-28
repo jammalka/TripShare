@@ -10,6 +10,8 @@ import androidx.navigation.navArgument
 import com.example.tripshare.screens.register.RegisterScreen
 import com.example.tripshare.ui.screens.AddRideScreen
 import com.example.tripshare.ui.screens.DriverDashboardScreen
+import com.example.tripshare.ui.screens.MyBookingsScreen
+import com.example.tripshare.ui.screens.PassengerDashboardScreen
 import com.example.tripshare.ui.screens.RoleSelectionScreen
 import com.example.tripshare.ui.screens.UpdateRideScreen
 import com.example.tripshare.ui.theme.screens.SplashScreen
@@ -35,8 +37,8 @@ fun AppNavHost(
         composable(ROUTE_ROLE) { RoleSelectionScreen(navController) }
         composable(ROUTE_DRIVER) { DriverDashboardScreen(navController) }
         composable(ROUTE_ADD_RIDE) { AddRideScreen(navController) }
-
-        // ✅ Update Ride with rideId passed
+        composable ( ROUTE_PASSENGER ){ PassengerDashboardScreen(navController=navController, userId = "passenger") }
+        composable (ROUTE_BOOKINGS ){ MyBookingsScreen(navController=navController, userId = "My_Bookings") }
         composable(
             route = "$ROUTE_UPDATE_RIDE/{rideId}",
             arguments = listOf(navArgument("rideId") { type = NavType.StringType })

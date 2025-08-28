@@ -18,31 +18,34 @@ import com.example.tripshare.models.RideModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PassengerDashboardScreen(
+fun MyBookingsScreen(
     navController: NavHostController,
     userId: String,
     rideAuthViewModel: RideAuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val rides by rideAuthViewModel.rides.observeAsState(emptyList())
+    val rides by rideAuthViewModel.rides.observeAsState(emptyList())  // 👈 Safe
 
     LaunchedEffect(Unit) {
         rideAuthViewModel.fetchRides()
     }
 
+    // filter only this passenger's bookings
+    val myBookings = rides.filter { it.bookedBy == userId }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Available Rides") })
+            TopAppBar(title = { Text("My Bookings") })
         }
     ) { padding ->
-        if (rides.isEmpty()) {
+        if (myBookings.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
                 contentAlignment = androidx.compose.ui.Alignment.Center
             ) {
-                Text("No rides available")
+                Text("No bookings yet")
             }
         } else {
             LazyColumn(
@@ -50,14 +53,15 @@ fun PassengerDashboardScreen(
                     .padding(padding)
                     .padding(16.dp)
             ) {
-                items(rides) { ride: RideModel ->   // ✅ explicit type
-                    RideCard(ride = ride, onBook = {
-                        rideAuthViewModel.bookRide(
-                            rideId = ride.id,   // ✅ use ride.id
-                            userId = userId,
+                // ✅ items() gets RideModel directly
+                items(myBookings) { ride: RideModel ->
+                    BookingCard(ride = ride, onCancel = {
+                        rideAuthViewModel.cancelBooking(
+                            rideId = ride.id,
                             context = context
-                        )
-                        Toast.makeText(context, "Ride booked", Toast.LENGTH_SHORT).show()
+                        ) {
+                            Toast.makeText(context, "Booking cancelled", Toast.LENGTH_SHORT).show()
+                        }
                     })
                 }
             }
@@ -66,9 +70,9 @@ fun PassengerDashboardScreen(
 }
 
 @Composable
-fun RideCard(
+fun BookingCard(
     ride: RideModel,
-    onBook: () -> Unit
+    onCancel: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -80,11 +84,10 @@ fun RideCard(
             Text("From: ${ride.origin}")
             Text("To: ${ride.destination}")
             Text("Date: ${ride.date}  Time: ${ride.time}")
-            Text("Seats: ${ride.seats}")
             Text("Driver: ${ride.driverName} (${ride.driverPhone})")
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onBook) {
-                Text("Book Ride")
+            Button(onClick = onCancel) {
+                Text("Cancel Booking")
             }
         }
     }

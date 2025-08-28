@@ -77,7 +77,8 @@ class RideAuthViewModel : ViewModel() {
             seats = seats,
             status = status,
             driverName = driverName,
-            driverPhone = driverPhone
+            driverPhone = driverPhone,
+            bookedBy = null
         )
 
         database.child(rideId).setValue(newRide)
@@ -117,7 +118,8 @@ class RideAuthViewModel : ViewModel() {
             seats = seats,
             status = status,
             driverName = driverName,
-            driverPhone = driverPhone
+            driverPhone = driverPhone,
+            bookedBy = null // reset booking if ride is updated
         )
 
         database.child(rideId).setValue(updatedRide)
@@ -136,8 +138,72 @@ class RideAuthViewModel : ViewModel() {
             .addOnFailureListener { Toast.makeText(context, "Delete failed: ${it.message}", Toast.LENGTH_SHORT).show() }
     }
 
+    // ✅ New: Book a ride
+    fun bookRide(rideId: String, userId: String, context: Context) {
+        database.child(rideId).get().addOnSuccessListener { snapshot ->
+            val ride = snapshot.getValue(RideModel::class.java)
+            if (ride != null && ride.status == "Available") {
+                val updatedRide = ride.copy(
+                    status = "Booked",
+                    bookedBy = userId
+                )
+                database.child(rideId).setValue(updatedRide)
+                    .addOnSuccessListener {
+                        Toast.makeText(context, "Ride booked successfully", Toast.LENGTH_SHORT).show()
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(context, "Booking failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                Toast.makeText(context, "Ride is no longer available", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun fetchMyBookings(userId: String): LiveData<List<RideModel>> {
+        val myBookings = MutableLiveData<List<RideModel>>()
+        database.orderByChild("bookedBy").equalTo(userId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val bookings = snapshot.children.mapNotNull { snap ->
+                        snap.getValue(RideModel::class.java)
+                    }
+                    myBookings.postValue(bookings)
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+        return myBookings
+    }
+
     override fun onCleared() {
         super.onCleared()
         ridesListener?.let { database.removeEventListener(it) }
     }
+    fun cancelBooking(
+        rideId: String,
+        context: Context,
+        onSuccess: () -> Unit
+    ) {
+        val rideRef = database.child(rideId)
+
+        rideRef.get().addOnSuccessListener { snapshot ->
+            val ride = snapshot.getValue(RideModel::class.java)
+            if (ride != null) {
+                val updatedRide = ride.copy(
+                    status = "Available",
+                    bookedBy = null
+                )
+                rideRef.setValue(updatedRide)
+                    .addOnSuccessListener {
+                        Toast.makeText(context, "Booking cancelled", Toast.LENGTH_SHORT).show()
+                        onSuccess()
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(context, "Failed to cancel: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+    }
+
 }

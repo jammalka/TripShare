@@ -1,6 +1,4 @@
-
 package com.example.tripshare.models
-
 
 data class RideModel(
     val id: String = "",
@@ -11,6 +9,6 @@ data class RideModel(
     val seats: Int = 0,
     val status: String? = "Available",
     val driverName: String? = "",
-    val driverPhone: String? = ""
-
+    val driverPhone: String? = "",
+    val bookedBy: String? = null
 )
