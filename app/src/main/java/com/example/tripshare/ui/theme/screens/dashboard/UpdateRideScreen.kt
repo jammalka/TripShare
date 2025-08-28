@@ -1,10 +1,7 @@
 package com.example.tripshare.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tripshare.data.RideAuthViewModel
+import com.example.tripshare.models.RideModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +29,9 @@ fun UpdateRideScreen(
     rideId: String,
     viewModel: RideAuthViewModel = viewModel()
 ) {
-    val ride by viewModel.getRideById(rideId).observeAsState()
+    // Observe with an explicit initial value (null) so compose knows the state type
+    val rideState = viewModel.getRideById(rideId).observeAsState(initial = null)
+    val ride = rideState.value // nullable RideModel
 
     var origin by remember { mutableStateOf("") }
     var destination by remember { mutableStateOf("") }
@@ -46,17 +46,17 @@ fun UpdateRideScreen(
     val statuses = listOf("Available", "Booked")
     val context = LocalContext.current
 
-    // Load ride values
+    // Load ride values safely once ride is available
     LaunchedEffect(ride) {
-        ride?.let {
-            origin = it.origin
-            destination = it.destination
-            date = it.date
-            time = it.time
-            seats = it.seats.coerceAtLeast(1)
-            status = it.status ?: "Available"
-            driverName = it.driverName ?: ""
-            driverPhone = it.driverPhone ?: ""
+        ride?.let { r ->
+            origin = r.origin
+            destination = r.destination
+            date = r.date
+            time = r.time
+            seats = (r.seats).coerceAtLeast(1)
+            status = r.status.ifEmpty { "Available" }
+            driverName = r.driverName
+            driverPhone = r.driverPhone
         }
     }
 
@@ -64,9 +64,7 @@ fun UpdateRideScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF2193b0), Color(0xFF6dd5ed))
-                )
+                Brush.verticalGradient(listOf(Color(0xFF2193b0), Color(0xFF6dd5ed)))
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -75,7 +73,7 @@ fun UpdateRideScreen(
                 .fillMaxWidth()
                 .padding(20.dp),
             shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            elevation = CardDefaults.cardElevation(10.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(
@@ -131,7 +129,10 @@ fun UpdateRideScreen(
 
                 OutlinedTextField(
                     value = seats.toString(),
-                    onValueChange = { seats = it.filter { c -> c.isDigit() }.toIntOrNull() ?: 1 },
+                    onValueChange = {
+                        // keep seats sane and avoid exceptions from empty or invalid strings
+                        seats = it.filter { c -> c.isDigit() }.toIntOrNull() ?: 1
+                    },
                     label = { Text("Seats") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -158,7 +159,6 @@ fun UpdateRideScreen(
                 )
                 Spacer(Modifier.height(12.dp))
 
-                // Status dropdown
                 ExposedDropdownMenuBox(
                     expanded = statusExpanded,
                     onExpandedChange = { statusExpanded = it },
@@ -190,9 +190,10 @@ fun UpdateRideScreen(
 
                 Button(
                     onClick = {
-                        if (ride != null) {
+                        // Only attempt update when ride has been loaded
+                        ride?.let { r ->
                             viewModel.updateRide(
-                                rideId = rideId,
+                                rideId = r.id,
                                 origin = origin,
                                 destination = destination,
                                 date = date,
@@ -203,23 +204,19 @@ fun UpdateRideScreen(
                                 driverPhone = driverPhone,
                                 context = context
                             ) {
+                                Toast.makeText(context, "Ride updated!", Toast.LENGTH_SHORT).show()
                                 navController.popBackStack()
                             }
-                        } else {
-                            Toast.makeText(context, "Ride not loaded yet", Toast.LENGTH_SHORT).show()
-                        }
+                        } ?: Toast.makeText(context, "Ride not loaded yet", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(55.dp)
                         .padding(top = 20.dp),
                     shape = RoundedCornerShape(15.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2193b0),
-                        contentColor = Color.White
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2193b0))
                 ) {
-                    Text("Update Ride", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Update Ride", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
         }

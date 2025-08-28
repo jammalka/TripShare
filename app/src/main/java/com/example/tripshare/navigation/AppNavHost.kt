@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.tripshare.screens.login.LoginScreen
 import com.example.tripshare.screens.register.RegisterScreen
 import com.example.tripshare.ui.screens.AddRideScreen
 import com.example.tripshare.ui.screens.DriverDashboardScreen
@@ -20,7 +21,6 @@ import com.example.tripshare.ui.screens.PassengerDashboardScreen
 import com.example.tripshare.ui.screens.RoleSelectionScreen
 import com.example.tripshare.ui.screens.UpdateRideScreen
 import com.example.tripshare.ui.theme.screens.SplashScreen
-import com.example.tripshare.ui.theme.screens.login.LoginScreen
 
 @Composable
 fun AppNavHost(
@@ -29,6 +29,7 @@ fun AppNavHost(
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
 
+        // Splash -> Register
         composable(ROUTE_SPLASH) {
             SplashScreen {
                 navController.navigate(ROUTE_REGISTER) {
@@ -37,26 +38,57 @@ fun AppNavHost(
             }
         }
 
+        // Auth Screens
         composable(ROUTE_REGISTER) { RegisterScreen(navController) }
         composable(ROUTE_LOGIN) { LoginScreen(navController) }
         composable(ROUTE_ROLE) { RoleSelectionScreen(navController) }
+
+        // Driver Screens
         composable(ROUTE_DRIVER) { DriverDashboardScreen(navController) }
         composable(ROUTE_ADD_RIDE) { AddRideScreen(navController) }
-        composable(ROUTE_PASSENGER) {
-            PassengerDashboardScreen(navController = navController, userId = "passenger")
+
+        // Passenger Screens
+        composable(
+            route = "$ROUTE_PASSENGER?userId={userId}",
+            arguments = listOf(
+                navArgument("userId") {
+                    type = NavType.StringType
+                    defaultValue = "passenger"
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: "passenger"
+            PassengerDashboardScreen(navController = navController, userId = userId)
         }
-        composable(ROUTE_BOOKINGS) {
-            MyBookingsScreen(navController = navController, userId = "My_Bookings")
+
+        // My Bookings
+        composable(
+            route = "$ROUTE_BOOKINGS?userId={userId}",
+            arguments = listOf(
+                navArgument("userId") {
+                    type = NavType.StringType
+                    defaultValue = "passenger"
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: "passenger"
+            MyBookingsScreen(navController = navController, userId = userId)
         }
+
+        // Update Ride
         composable(
             route = "$ROUTE_UPDATE_RIDE/{rideId}",
-            arguments = listOf(navArgument("rideId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("rideId") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val rideId = backStackEntry.arguments?.getString("rideId") ?: return@composable
             UpdateRideScreen(navController = navController, rideId = rideId)
         }
 
-        // ✅ Placeholder for Organiser (so app doesn’t crash)
+        // Organiser Dashboard (placeholder)
         composable(ROUTE_ORGANISER) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Organiser Dashboard Coming Soon")

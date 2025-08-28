@@ -12,11 +12,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.tripshare.navigation.ROUTE_DRIVER
-import com.example.tripshare.navigation.ROUTE_LOGIN
 import com.example.tripshare.navigation.ROUTE_ORGANISER
 import com.example.tripshare.navigation.ROUTE_PASSENGER
-
-
 
 @Composable
 fun RoleSelectionScreen(navController: NavController) {
@@ -56,7 +53,7 @@ fun RoleSelectionScreen(navController: NavController) {
 
             // Passenger Button
             Button(
-                onClick = { navController.navigate(ROUTE_PASSENGER) },
+                onClick = { navController.navigate("$ROUTE_PASSENGER?userId=passenger") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

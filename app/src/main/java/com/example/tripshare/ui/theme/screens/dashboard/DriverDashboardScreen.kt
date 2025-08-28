@@ -15,9 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -33,10 +33,13 @@ fun DriverDashboardScreen(
     viewModel: RideAuthViewModel = viewModel()
 ) {
     val rides by viewModel.rides.observeAsState(emptyList())
+    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
 
+    // Fetch rides on first composition (fetchRides has no callback in your current ViewModel)
     LaunchedEffect(Unit) {
         viewModel.fetchRides()
+        // keep behavior same as earlier: hide spinner once fetch triggered
         isLoading = false
     }
 
@@ -48,38 +51,30 @@ fun DriverDashboardScreen(
             }
         }
     ) { padding ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            when {
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-            rides.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No rides available. Add a ride to get started.")
-                }
-            }
+                rides.isEmpty() -> Text(
+                    "No rides available. Add a ride to get started.",
+                    modifier = Modifier.align(Alignment.Center)
+                )
 
-            else -> {
-                LazyColumn(
-                    contentPadding = padding,
+                else -> LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
                     items(rides) { ride ->
-                        RideCard(ride, viewModel, navController)
+                        RideCardDriver(
+                            ride = ride,
+                            viewModel = viewModel,
+                            navController = navController
+                        )
                     }
                 }
             }
@@ -88,7 +83,7 @@ fun DriverDashboardScreen(
 }
 
 @Composable
-fun RideCard(
+fun RideCardDriver(
     ride: RideModel,
     viewModel: RideAuthViewModel,
     navController: NavController
@@ -109,16 +104,15 @@ fun RideCard(
                 .background(Color.White)
                 .padding(16.dp)
         ) {
-            Text("From: ${ride.origin ?: "N/A"}", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text("To: ${ride.destination ?: "N/A"}", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text("Date: ${ride.date ?: "N/A"}")
-            Text("Time: ${ride.time ?: "N/A"}")
+            Text("From: ${ride.origin.ifBlank { "N/A" }}", fontWeight = FontWeight.Bold)
+            Text("To: ${ride.destination.ifBlank { "N/A" }}", fontWeight = FontWeight.Bold)
+            Text("Date: ${ride.date.ifBlank { "N/A" }}")
+            Text("Time: ${ride.time.ifBlank { "N/A" }}")
             Text("Seats: ${ride.seats}")
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Status badge
-            val rideStatus = ride.status ?: "Available"
+            val rideStatus = ride.status.ifBlank { "Available" }
             Text(
                 text = rideStatus,
                 color = Color.White,
@@ -132,18 +126,16 @@ fun RideCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Driver info with call intent
-            val driverName = ride.driverName ?: "N/A"
-            val driverPhone = ride.driverPhone ?: ""
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Driver: $driverName")
+                Text("Driver: ${ride.driverName.ifBlank { "N/A" }}")
                 Spacer(modifier = Modifier.width(12.dp))
-                if (driverPhone.isNotBlank()) {
+                val phone = ride.driverPhone.ifBlank { "" }
+                if (phone.isNotBlank()) {
                     Text(
-                        text = driverPhone,
+                        text = phone,
                         color = Color(0xFF2196F3),
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$driverPhone"))
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
                             context.startActivity(intent)
                         }
                     )
@@ -155,12 +147,11 @@ fun RideCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row {
-                Button(onClick = { navController.navigate("${ROUTE_UPDATE_RIDE}/${ride.id}") }) {
+                // Safe navigation: only navigate if ride.id is present
+                Button(onClick = { ride.id.takeIf { it.isNotBlank() }?.let { id -> navController.navigate("$ROUTE_UPDATE_RIDE/$id") } }) {
                     Text("Update")
                 }
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 Button(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     onClick = { showDeleteDialog = true }
@@ -176,16 +167,18 @@ fun RideCard(
             onDismissRequest = { showDeleteDialog = false },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteRide(ride.id, context)
+                    // call delete with onSuccess callback (matches ViewModel signature that expects onSuccess)
+                    ride.id.takeIf { it.isNotBlank() }?.let { id ->
+                        viewModel.deleteRide(id, context) {
+                            // refresh and notify
+                            viewModel.fetchRides()
+                        }
+                    }
                     showDeleteDialog = false
-                }) {
-                    Text("Yes")
-                }
+                }) { Text("Yes") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("No")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("No") }
             },
             title = { Text("Cancel Ride") },
             text = { Text("Are you sure you want to cancel this ride?") }

@@ -7,8 +7,8 @@ data class RideModel(
     val date: String = "",
     val time: String = "",
     val seats: Int = 0,
-    val status: String? = "Available",
-    val driverName: String? = "",
-    val driverPhone: String? = "",
-    val bookedBy: String? = null
+    val status: String = "Available",   // "Available", "Booked", "Cancelled"
+    val driverName: String = "",
+    val driverPhone: String = "",
+    val bookedBy: List<String> = emptyList() // Always defaults to emptyList
 )

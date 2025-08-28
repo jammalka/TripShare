@@ -1,68 +1,53 @@
 package com.example.tripshare.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import com.example.tripshare.data.RideAuthViewModel
 import com.example.tripshare.models.RideModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyBookingsScreen(
-    navController: NavHostController,
+    navController: NavController,
     userId: String,
-    rideAuthViewModel: RideAuthViewModel = viewModel()
+    viewModel: RideAuthViewModel = viewModel()
 ) {
+    val bookings by viewModel.myBookings.observeAsState(emptyList())
     val context = LocalContext.current
-    val myBookings by rideAuthViewModel.myBookings.observeAsState(emptyList())
 
-    LaunchedEffect(userId) {
-        rideAuthViewModel.fetchMyBookings(userId)
-    }
+    LaunchedEffect(Unit) { viewModel.fetchMyBookings(userId) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("My Bookings") })
-        }
-    ) { padding ->
-        if (myBookings.isEmpty()) {
+    Scaffold(topBar = { TopAppBar(title = { Text("My Bookings") }) }) { padding ->
+        if (bookings.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
                 contentAlignment = Alignment.Center
-            ) {
-                Text("No bookings yet")
-            }
+            ) { Text("No bookings yet") }
         } else {
             LazyColumn(
+                contentPadding = padding,
                 modifier = Modifier
-                    .padding(padding)
+                    .fillMaxSize()
                     .padding(16.dp)
             ) {
-                items(myBookings) { ride: RideModel ->
-                    BookingCard(
-                        ride = ride,
-                        onCancel = {
-                            rideAuthViewModel.cancelBooking(
-                                rideId = ride.id,
-                                context = context,
-                                onSuccess = {
-                                    Toast.makeText(context, "Booking cancelled", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                    )
+                items(bookings) { ride ->
+                    BookingCard(ride, userId, viewModel)
                 }
             }
         }
@@ -72,24 +57,42 @@ fun MyBookingsScreen(
 @Composable
 fun BookingCard(
     ride: RideModel,
-    onCancel: () -> Unit
+    userId: String,
+    viewModel: RideAuthViewModel
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .padding(8.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("From: ${ride.origin}")
-            Text("To: ${ride.destination}")
-            Text("Date: ${ride.date}  Time: ${ride.time}")
-            Text("Seats: ${ride.seats}")
-            Text("Driver: ${ride.driverName} (${ride.driverPhone})")
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = onCancel) {
-                Text("Cancel Booking")
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(16.dp)
+        ) {
+            Text("From: ${ride.origin ?: "N/A"}")
+            Text("To: ${ride.destination ?: "N/A"}")
+            Text("Date: ${ride.date ?: "N/A"}")
+            Text("Time: ${ride.time ?: "N/A"}")
+            Text("Seats remaining: ${ride.seats}")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                onClick = {
+                    viewModel.cancelBooking(ride.id, userId, context) {
+                        Toast.makeText(context, "Booking cancelled", Toast.LENGTH_SHORT).show()
+                        viewModel.fetchMyBookings(userId)
+                        viewModel.fetchRides()
+                    }
+                }
+            ) { Text("Cancel Booking") }
         }
     }
 }

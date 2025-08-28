@@ -1,10 +1,7 @@
 package com.example.tripshare.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,10 +29,9 @@ fun AddRideScreen(
     var destination by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
-    var seats by remember { mutableStateOf("") }   // ✅ changed to String
+    var seats by remember { mutableStateOf("") }
     var driverName by remember { mutableStateOf("") }
     var driverPhone by remember { mutableStateOf("") }
-
     val statuses = listOf("Available", "Booked")
     var status by remember { mutableStateOf(statuses[0]) }
     var statusExpanded by remember { mutableStateOf(false) }
@@ -46,11 +41,7 @@ fun AddRideScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF36D1DC), Color(0xFF5B86E5))
-                )
-            ),
+            .background(Brush.verticalGradient(listOf(Color(0xFF36D1DC), Color(0xFF5B86E5)))),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -61,88 +52,70 @@ fun AddRideScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+            Column(modifier = Modifier.fillMaxWidth().padding(20.dp),
                 verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Add New Ride",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2193b0),
-                    modifier = Modifier.padding(bottom = 20.dp)
-                )
+                horizontalAlignment = Alignment.CenterHorizontally) {
+
+                Text("Add New Ride", fontSize = 24.sp, color = Color(0xFF2193b0), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.padding(bottom = 20.dp))
 
                 OutlinedTextField(
                     value = origin,
                     onValueChange = { origin = it },
                     label = { Text("Origin") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = destination,
                     onValueChange = { destination = it },
                     label = { Text("Destination") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = date,
                     onValueChange = { date = it },
                     label = { Text("Date") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = time,
                     onValueChange = { time = it },
                     label = { Text("Time") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // ✅ Seats as String input
                 OutlinedTextField(
                     value = seats,
                     onValueChange = { seats = it },
                     label = { Text("Seats") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = driverName,
                     onValueChange = { driverName = it },
                     label = { Text("Driver Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = driverPhone,
                     onValueChange = { driverPhone = it },
                     label = { Text("Driver Phone") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Status dropdown
                 ExposedDropdownMenuBox(
                     expanded = statusExpanded,
                     onExpandedChange = { statusExpanded = it },
@@ -156,52 +129,26 @@ fun AddRideScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded) },
                         modifier = Modifier.menuAnchor()
                     )
-                    ExposedDropdownMenu(
-                        expanded = statusExpanded,
-                        onDismissRequest = { statusExpanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }) {
                         statuses.forEach { s ->
-                            DropdownMenuItem(
-                                text = { Text(s) },
-                                onClick = {
-                                    status = s
-                                    statusExpanded = false
-                                }
-                            )
+                            DropdownMenuItem(text = { Text(s) }, onClick = { status = s; statusExpanded = false })
                         }
                     }
                 }
 
                 Button(
                     onClick = {
-                        if (origin.isNotBlank() && destination.isNotBlank() &&
-                            date.isNotBlank() && time.isNotBlank() &&
-                            seats.isNotBlank() && driverName.isNotBlank() && driverPhone.isNotBlank()
-                        ) {
-                            viewModel.addRide(
-                                origin = origin,
-                                destination = destination,
-                                date = date,
-                                time = time,
-                                seats = seats.toIntOrNull() ?: 0,  // ✅ convert here
-                                status = status,
-                                driverName = driverName,
-                                driverPhone = driverPhone,
-                                context = context
-                            ) {
-                                navController.popBackStack()
-                            }
-                        } else {
+                        if (origin.isBlank() || destination.isBlank() || seats.isBlank() || driverName.isBlank() || driverPhone.isBlank()) {
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        viewModel.addRide(origin, destination, date, time, seats.toIntOrNull() ?: 1, status, driverName, driverPhone, context) {
+                            navController.popBackStack()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2193b0))
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
                 ) {
-                    Text("Add Ride", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Add Ride", color = Color.White)
                 }
             }
         }
